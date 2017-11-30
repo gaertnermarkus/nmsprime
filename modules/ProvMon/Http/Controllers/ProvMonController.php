@@ -82,7 +82,7 @@ class ProvMonController extends \BaseController
      */
     public function analyses($id)
     {
-        $ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = null;
+		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = $preeq = null;
         $modem = $this->modem ? $this->modem : Modem::find($id);
         $view_var = $modem; // for top header
         $error = '';
@@ -116,6 +116,9 @@ class ProvMonController extends \BaseController
         $cf_path = "/tftpboot/cm/$modem->hostname.conf";
         $configfile = is_file($cf_path) ? file($cf_path) : null;
 
+		// Pre-equalization data
+		$preeq = $modem->get_preq_data();  //calling the function get_preq_data() from the modem and instantiating it to class modem
+
         // Realtime Measure - this takes the most time
         // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
         if ($online) {
@@ -140,7 +143,7 @@ class ProvMonController extends \BaseController
         $view_header = 'ProvMon-Analyses';
 
         // View
-        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header')));
+		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'preeq')));
     }
 
     /**

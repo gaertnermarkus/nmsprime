@@ -25,6 +25,8 @@
 @yield ('form-javascript')
 @yield ('javascript')
 @yield ('javascript_extra')
+@yield('mycharts')
+@yield('fftchart')
 
 {{-- scroll to top btn --}}
 <a href="javascript:;"
