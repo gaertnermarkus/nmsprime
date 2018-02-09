@@ -50,6 +50,17 @@ class ModemRefreshCommand extends Command
             return;
         }
 
+		if ($this->option('tdr-only')) {
+			foreach (\Modules\ProvBase\Entities\Modem::all() as $modem) {
+				$modem->observer_enabled = false;
+				$preeq = $modem->get_preq_data();
+				$modem->tdr = array_key_exists('tdr', $preeq) ? $preeq['tdr'] : 0;
+				$modem->save();
+			}
+
+			return 0;
+		}
+
         // Setup / Calculate speed for algorithm
         // NOTE: This is a worst-case calculation, which means the schedule cycle will be finished faster
         //       because there will be most of the modems online and answering faster than $timeout.
@@ -129,6 +140,8 @@ class ModemRefreshCommand extends Command
         return [
             ['debug', null, InputOption::VALUE_OPTIONAL, 'debug on: show each entry with snmp result', false],
             ['schedule', null, InputOption::VALUE_OPTIONAL, 'call from schedule context, uses schedule time setting', false],
+			['tdr-only', null, InputOption::VALUE_NONE, 'only update the TDR value'],
         ];
     }
 }
+
