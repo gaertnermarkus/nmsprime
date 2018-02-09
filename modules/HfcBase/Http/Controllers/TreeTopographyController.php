@@ -74,14 +74,59 @@ class TreeTopographyController extends HfcBaseController
         // MPS: get all Modem Positioning Rules
         $mpr = $this->mpr(NetElement::whereRaw($s));
 
+		//temporary heat map data @author: John Adebayo
+		$dim = [];
+		foreach (\Modules\ProvBase\Entities\Modem::all() as $modem => $value) {
+			$temp = round($value['tdr'] / 111111.1, 4);
+				for ($i=0; $i <= 360 ; $i+=30) {
+					$dim[] = $temp * cos($i) + $value['y'];
+					$dim[] = $temp * sin($i) + $value['x'];
+				}
+			}
+		$dim = array_chunk($dim, 2);
+
         // NetElements: generate kml_file upload array
         $kmls = $this->kml_file_array(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' ')->get());
         $file = route('HfcBase.get_file', ['type' => 'kml', 'filename' => basename($file)]);
 
-        return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'tabs', 'body_onload', 'field', 'search', 'mpr', 'kmls')));
+		return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'tabs', 'body_onload', 'field', 'search', 'mpr' ,'kmls', 'dim')));
     }
 
     /*
+	 * KML Upload Array: Generate the KML file array
+	 *
+	 * @param trees: The Tree Objects to be displayed, without ->get() call
+	 * @return array of KML files, like ['file', 'descr']
+	 *
+	 * @author: Torsten Schmidt
+	 */
+	private function kml_file_array($trees)
+	{
+		$a = [];
+
+		foreach ($trees->get() as $tree)
+		{
+			if ($tree->kml_file != '')
+				array_push($a, ['file'=>$tree->kml_path.'/'.$tree->kml_file, 'descr' => $tree->kml_file]);
+		}
+
+		return $a;
+	}
+
+	/*
+	Get the Heatmap data
+	$townList = Town::all();
+
+return View::make('town')->with('townList', $townList);
+
+Because you are getting an object with many results your view:
+@foreach($townList as $town)
+{{ $town->name }} or what the column name is
+@endforeach
+	*/
+
+
+	/*
      * MPS: Modem Positioning Rules
      * return multi array with MPS rules and Geopositions, like
      *   [ [mpr.id] => [0 => [0=>x,1=>y], 1 => [0=>x,1=>y], ..], .. ]
