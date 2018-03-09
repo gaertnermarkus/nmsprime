@@ -52,8 +52,12 @@ class ModemRefreshCommand extends Command
 
 		if ($this->option('tdr-only')) {
 			foreach (\Modules\ProvBase\Entities\Modem::all() as $modem) {
+echo("$modem->tdr\n");
+//dd($modem->get_preq_data());
 				$modem->observer_enabled = false;
 				$preeq = $modem->get_preq_data();
+				if ($preeq === 'No pre-equalization data found')
+					continue;
 				$modem->tdr = array_key_exists('tdr', $preeq) ? $preeq['tdr'] : 0;
 				$modem->save();
 			}
