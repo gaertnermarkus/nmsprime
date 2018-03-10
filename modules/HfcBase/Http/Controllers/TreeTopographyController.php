@@ -29,6 +29,16 @@ class TreeTopographyController extends HfcBaseController
     private $path_images = 'modules/hfcbase/kml/';
 
     /*
+	@author: John Adebayo
+	Private property determines the range of intensity of the Heatmap, for the amplitude values
+	of the modem
+	$min_value is the minimum for the database query
+	$max_value is the max for the database query
+	*/
+	private $min_value = 1;
+	private $max_value = 5;
+
+	/*
      * Constructor: Set local vars
      */
     public function __construct()
@@ -74,16 +84,21 @@ class TreeTopographyController extends HfcBaseController
         // MPS: get all Modem Positioning Rules
         $mpr = $this->mpr(NetElement::whereRaw($s));
 
-		//temporary heat map data @author: John Adebayo
 		$dim = [];
-		foreach (\Modules\ProvBase\Entities\Modem::all() as $modem => $value) {
+		//$min_amp = $this->min_value;
+		$thresh = $this->max_value;
+		$max = \DB::table('modem')->where('fft_max' , '>' , $this->min_value)->where('fft_max' , '<', $this->max_value)->max('fft_max');
+		foreach (\Modules\ProvBase\Entities\Modem::where('fft_max' , '>' , $this->min_value)->where('fft_max' , '<', $this->max_value)->get() as $modem => $value) {
 			$temp = round($value['tdr'] / 111111.1, 4);
 				for ($i=0; $i <= 360 ; $i+=30) {
 					$dim[] = $temp * cos($i) + $value['y'];
 					$dim[] = $temp * sin($i) + $value['x'];
+						$dim[] = $value['fft_max'] / $max;
 				}
 			}
-		$dim = array_chunk($dim, 2);
+
+		$dim = array_chunk($dim, 3);
+		//dd($dim);
 
         // NetElements: generate kml_file upload array
         $kmls = $this->kml_file_array(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' ')->get());
