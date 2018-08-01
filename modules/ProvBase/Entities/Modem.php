@@ -1041,7 +1041,7 @@ class Modem extends \BaseModel
 			return ['No pre-equalization data found'];
 
 		$ret = [];
-		dd($preq['data']);
+
 		$freq = $preq['width'];
 		$hexs = str_split($preq['data'], 8);
 		$or_hexs = array_shift($hexs);
