@@ -50,20 +50,21 @@ class ModemRefreshCommand extends Command
             return;
         }
 
-		if ($this->option('tdr-only')) {
-			foreach (\Modules\ProvBase\Entities\Modem::all() as $modem) {
-echo("$modem->id\n");
-				$modem->observer_enabled = false;
-				$preeq = $modem->get_preq_data();
-				if ($preeq === 'No pre-equalization data found')
-					continue;
-				$modem->tdr = array_key_exists('tdr', $preeq) ? $preeq['tdr'] : 0;
-				$modem->fft_max = array_key_exists('max', $preeq) ? $preeq['max'] : 0;
-				$modem->save();
-			}
+        if ($this->option('tdr-only')) {
+            foreach (\Modules\ProvBase\Entities\Modem::all() as $modem) {
+                echo "$modem->id\n";
+                $modem->observer_enabled = false;
+                $preeq = $modem->get_preq_data();
+                if ($preeq === 'No pre-equalization data found') {
+                    continue;
+                }
+                $modem->tdr = array_key_exists('tdr', $preeq) ? $preeq['tdr'] : 0;
+                $modem->fft_max = array_key_exists('max', $preeq) ? $preeq['max'] : 0;
+                $modem->save();
+            }
 
-			return 0;
-		}
+            return 0;
+        }
 
         // Setup / Calculate speed for algorithm
         // NOTE: This is a worst-case calculation, which means the schedule cycle will be finished faster
@@ -144,8 +145,7 @@ echo("$modem->id\n");
         return [
             ['debug', null, InputOption::VALUE_OPTIONAL, 'debug on: show each entry with snmp result', false],
             ['schedule', null, InputOption::VALUE_OPTIONAL, 'call from schedule context, uses schedule time setting', false],
-			['tdr-only', null, InputOption::VALUE_NONE, 'only update the TDR value'],
+            ['tdr-only', null, InputOption::VALUE_NONE, 'only update the TDR value'],
         ];
     }
 }
-

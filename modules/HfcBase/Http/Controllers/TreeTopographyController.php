@@ -29,16 +29,16 @@ class TreeTopographyController extends HfcBaseController
     private $path_images = 'modules/hfcbase/kml/';
 
     /*
-	@author: John Adebayo
-	Private property determines the range of intensity of the Heatmap, for the amplitude values
-	of the modem
-	$min_value is the minimum for the database query
-	$max_value is the max for the database query
-	*/
-	private $min_value;
-	private $max_value;
+    @author: John Adebayo
+    Private property determines the range of intensity of the Heatmap, for the amplitude values
+    of the modem
+    $min_value is the minimum for the database query
+    $max_value is the max for the database query
+    */
+    private $min_value;
+    private $max_value;
 
-	/*
+    /*
      * Constructor: Set local vars
      */
     public function __construct()
@@ -49,23 +49,23 @@ class TreeTopographyController extends HfcBaseController
         return parent::__construct();
     }
 
-	/*
-	@author: John Adebayo
-	This function sets the value of the display in percentage
-	e.g 100% = 5 i.e the variable max_value above
-	*/
-	function set_maxmin()
-	{
-		//\Input::all();
-		//$max = \Input::get('max');
-		//$percent = \Input::get('percent');
-		//$max = 5; $percent = 20;
-		//$min = $percent / 100 * $max;
-		$min = 0;
-		$max = 5;
-		$this->max_value = $max;
-		$this->min_value = $min;
-	}
+    /*
+    @author: John Adebayo
+    This function sets the value of the display in percentage
+    e.g 100% = 5 i.e the variable max_value above
+    */
+    public function set_maxmin()
+    {
+        //\Input::all();
+        //$max = \Input::get('max');
+        //$percent = \Input::get('percent');
+        //$max = 5; $percent = 20;
+        //$min = $percent / 100 * $max;
+        $min = 0;
+        $max = 5;
+        $this->max_value = $max;
+        $this->min_value = $min;
+    }
 
     /**
      * Show Cluster or Network Entity Relation Diagram
@@ -102,27 +102,27 @@ class TreeTopographyController extends HfcBaseController
         // MPS: get all Modem Positioning Rules
         $mpr = $this->mpr(NetElement::whereRaw($s));
 
-		$dim = [];
-		$point = [];
-		$thresh = $this->set_maxmin();
-		//$work = \DB::table('modem')->max('fft_max');
-		//$work = \DB::table('modem')->where('fft_max', '=', 6.48)->select('id')->get();
-		//dd($work);
-		$max = \DB::table('modem')->where('fft_max' , '>' , $this->min_value)->where('fft_max' , '<', $this->max_value)->orderBy('street')->limit(1000)->max('fft_max');
-		foreach (\Modules\ProvBase\Entities\Modem::where('fft_max' , '>' , $this->min_value)->where('fft_max' , '<', $this->max_value)->orderBy('street')->limit(1000)->get() as $modem => $value) {
-			$point[] = $value['y'];
-			$point[] = $value['x'];
-			$point[] = $value['tdr']."";
-			$temp = round($value['tdr'] / 111111.1, 4);
-					for ($i=0; $i <= 360 ; $i+=10) {
-					$dim[] = $temp * cos($i) + $value['y'];
-					$dim[] = $temp * sin($i) + $value['x'];
-						$dim[] = $value['fft_max'] / $max * \Input::get('percent')/100;
-				}
-			}
+        $dim = [];
+        $point = [];
+        $thresh = $this->set_maxmin();
+        //$work = \DB::table('modem')->max('fft_max');
+        //$work = \DB::table('modem')->where('fft_max', '=', 6.48)->select('id')->get();
+        //dd($work);
+        $max = \DB::table('modem')->where('fft_max', '>', $this->min_value)->where('fft_max', '<', $this->max_value)->orderBy('street')->limit(1000)->max('fft_max');
+        foreach (\Modules\ProvBase\Entities\Modem::where('fft_max', '>', $this->min_value)->where('fft_max', '<', $this->max_value)->orderBy('street')->limit(1000)->get() as $modem => $value) {
+            $point[] = $value['y'];
+            $point[] = $value['x'];
+            $point[] = $value['tdr'].'';
+            $temp = round($value['tdr'] / 111111.1, 4);
+            for ($i = 0; $i <= 360; $i += 10) {
+                $dim[] = $temp * cos($i) + $value['y'];
+                $dim[] = $temp * sin($i) + $value['x'];
+                $dim[] = $value['fft_max'] / $max * \Input::get('percent') / 100;
+            }
+        }
 
-		$dim = array_chunk($dim, 3);
-		$point = array_chunk($point, 3);
+        $dim = array_chunk($dim, 3);
+        $point = array_chunk($point, 3);
 
         // NetElements: generate kml_file upload array
         $kmls = $this->kml_file_array(NetElement::whereRaw($s)->whereNotNull('pos')->where('pos', '!=', ' ')->get());
@@ -132,29 +132,29 @@ class TreeTopographyController extends HfcBaseController
     }
 
     /*
-	 * KML Upload Array: Generate the KML file array
-	 *
-	 * @param trees: The Tree Objects to be displayed, without ->get() call
-	 * @return array of KML files, like ['file', 'descr']
-	 *
-	 * @author: Torsten Schmidt
-	 */
-	private function kml_file_array($trees)
-	{
-		$a = [];
+     * KML Upload Array: Generate the KML file array
+     *
+     * @param trees: The Tree Objects to be displayed, without ->get() call
+     * @return array of KML files, like ['file', 'descr']
+     *
+     * @author: Torsten Schmidt
+     */
+    private function kml_file_array($trees)
+    {
+        $a = [];
 
-		foreach ($trees->get() as $tree)
-		{
-			if ($tree->kml_file != '')
-				array_push($a, ['file'=>$tree->kml_path.'/'.$tree->kml_file, 'descr' => $tree->kml_file]);
-		}
+        foreach ($trees->get() as $tree) {
+            if ($tree->kml_file != '') {
+                array_push($a, ['file'=>$tree->kml_path.'/'.$tree->kml_file, 'descr' => $tree->kml_file]);
+            }
+        }
 
-		return $a;
-	}
+        return $a;
+    }
 
-	/*
-	Get the Heatmap data
-	$townList = Town::all();
+    /*
+    Get the Heatmap data
+    $townList = Town::all();
 
 return View::make('town')->with('townList', $townList);
 
@@ -162,10 +162,9 @@ Because you are getting an object with many results your view:
 @foreach($townList as $town)
 {{ $town->name }} or what the column name is
 @endforeach
-	*/
+    */
 
-
-	/*
+    /*
      * MPS: Modem Positioning Rules
      * return multi array with MPS rules and Geopositions, like
      *   [ [mpr.id] => [0 => [0=>x,1=>y], 1 => [0=>x,1=>y], ..], .. ]

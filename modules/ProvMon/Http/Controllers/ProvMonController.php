@@ -82,7 +82,7 @@ class ProvMonController extends \BaseController
      */
     public function analyses($id)
     {
-		$ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = $preeq = null;
+        $ping = $lease = $log = $dash = $realtime = $type = $flood_ping = $configfile = $eventlog = $preeq = null;
         $modem = $this->modem ? $this->modem : Modem::find($id);
         $view_var = $modem; // for top header
         $error = '';
@@ -116,8 +116,8 @@ class ProvMonController extends \BaseController
         $cf_path = "/tftpboot/cm/$modem->hostname.conf";
         $configfile = is_file($cf_path) ? file($cf_path) : null;
 
-		// Pre-equalization data
-		$preeq = $modem->get_preq_data();  //calling the function get_preq_data() from the modem and instantiating it to class modem
+        // Pre-equalization data
+        $preeq = $modem->get_preq_data();  //calling the function get_preq_data() from the modem and instantiating it to class modem
 
         // Realtime Measure - this takes the most time
         // TODO: only load channel count to initialise the table and fetch data via AJAX call after Page Loaded
