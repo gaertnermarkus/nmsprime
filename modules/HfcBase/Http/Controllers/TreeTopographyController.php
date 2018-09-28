@@ -132,39 +132,6 @@ class TreeTopographyController extends HfcBaseController
     }
 
     /*
-     * KML Upload Array: Generate the KML file array
-     *
-     * @param trees: The Tree Objects to be displayed, without ->get() call
-     * @return array of KML files, like ['file', 'descr']
-     *
-     * @author: Torsten Schmidt
-     */
-    private function kml_file_array($trees)
-    {
-        $a = [];
-
-        foreach ($trees->get() as $tree) {
-            if ($tree->kml_file != '') {
-                array_push($a, ['file'=>$tree->kml_path.'/'.$tree->kml_file, 'descr' => $tree->kml_file]);
-            }
-        }
-
-        return $a;
-    }
-
-    /*
-    Get the Heatmap data
-    $townList = Town::all();
-
-return View::make('town')->with('townList', $townList);
-
-Because you are getting an object with many results your view:
-@foreach($townList as $town)
-{{ $town->name }} or what the column name is
-@endforeach
-    */
-
-    /*
      * MPS: Modem Positioning Rules
      * return multi array with MPS rules and Geopositions, like
      *   [ [mpr.id] => [0 => [0=>x,1=>y], 1 => [0=>x,1=>y], ..], .. ]
