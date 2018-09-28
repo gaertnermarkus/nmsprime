@@ -22,6 +22,7 @@
     "brokencube/fft": "~1.0.1"
   },
   "require-dev": {
+    "barryvdh/laravel-debugbar": "~2.4",
     "phpunit/phpunit": "~5.7",
     "phpspec/phpspec": "~2.1",
     "laracasts/generators": "^1.1",
