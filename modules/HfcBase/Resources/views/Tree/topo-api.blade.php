@@ -377,7 +377,7 @@ function init_for_customer ()
 }
 
 function heat_map(){
-	var planes = <?php echo json_encode($point);?>;
+	var planes =  {{ isset($point) ? json_encode($point) : '[]'  }};
 	var mymap = L.map('mapid').setView([50.6504, 13.1623],13);
 
 	var baseLayer = L.tileLayer(
@@ -393,7 +393,7 @@ function heat_map(){
 			.bindPopup(planes[i][2])
 			.addTo(mymap);
 		}
-	var heat = 	L.heatLayer(<?php echo json_encode($dim);?>, {
+		var heat = 	L.heatLayer({{ isset($dim) ? json_encode($dim) : '[]' }}, {
 				minOpacity:0, maxZoom:10, radius:14, blur:20, max:1.0,
 				gradient: {
                 0.00 :'rgba(0,0,238,1)',
@@ -421,5 +421,3 @@ function heat_map(){
 }
 
 </script>
-
-

@@ -131,16 +131,15 @@ class TreeTopographyController extends HfcBaseController
 		return \View::make('HfcBase::Tree.topo', $this->compact_prep_view(compact('file', 'target', 'route_name', 'view_header', 'tabs', 'body_onload', 'field', 'search', 'mpr' ,'kmls', 'dim', 'point')));
     }
 
-    /*
+    /**
      * MPS: Modem Positioning Rules
      * return multi array with MPS rules and Geopositions, like
      *   [ [mpr.id] => [0 => [0=>x,1=>y], 1 => [0=>x,1=>y], ..], .. ]
      * enable and see dd() for a more detailed view
      *
-     * @param trees: The Tree Objects to be displayed, without ->get() call
-     * @return array of MPS rules and geopos for all $tree objects
-     *
      * @author: Torsten Schmidt
+     * @param Illuminate\Database\Eloquent\Builder $trees The Tree Objects to be displayed
+     * @return array MPS rules and geopos for all $tree objects
      */
     public function mpr($trees)
     {

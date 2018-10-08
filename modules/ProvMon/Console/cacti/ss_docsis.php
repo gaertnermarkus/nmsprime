@@ -124,7 +124,7 @@ function ss_docsis($hostname, $snmp_community)
     $rates = ['+8 hours', '+4 hours', '+10 minutes'];
     $preEqu = json_decode(file_exists($file) ? file_get_contents($file) : '{"rate":0}', true);
 
-    // if (!isset($preEqu['next']) || time() > $preEqu['next']) {
+    if (! isset($preEqu['next']) || time() > $preEqu['next']) {
         snmp_set_quick_print(true);
         snmp_set_valueretrieval(SNMP_VALUE_LIBRARY);
 
@@ -140,7 +140,7 @@ function ss_docsis($hostname, $snmp_community)
         $preEqu['width'] = $bandwidth ? reset($bandwidth) : 3200000;
         $preEqu['descr'] = isset($systemDescription) ? $systemDescription : 'n/a';
 
-        $preEqu['raw'] = $preEquData ?  preg_replace("/[^A-Fa-f0-9]/", '', reset($preEquData)) : '';
+        $preEqu['raw'] = $preEquData ? preg_replace('/[^A-Fa-f0-9]/', '', reset($preEquData)) : '';
 
         $freq = $preEqu['width'];
         $hexs = str_split($preEqu['raw'], 8);
@@ -182,7 +182,7 @@ function ss_docsis($hostname, $snmp_community)
         $arr['descr'] = $preEqu['descr'];
 
         file_put_contents($file, json_encode($preEqu));
-    // }
+    }
 
     $result = '';
     foreach ($arr as $key => $value) {
@@ -265,11 +265,11 @@ function _nePwr($decimal, $maintap)
 function _energy($pwr, $maintap, $energymain)
 {
     $ene_db = [];
-        //calculating the magnitude
+    //calculating the magnitude
     $pwr = array_chunk($pwr, 2);
     foreach ($pwr as $val) {
         $temp = 10 * log10($val[0] ** 2 + $val[1] ** 2);
-        if (!(is_finite($temp))) {
+        if (! (is_finite($temp))) {
             $temp = -100;
         }
         $ene_db[] = round($temp, 2);
@@ -317,7 +317,7 @@ function _fft($pwr)
         array_push($imag, array_shift($imag));
     }
 
-    require_once __DIR__. '/../../../../vendor/brokencube/fft/src/FFT.php';
+    require_once __DIR__.'/../../../../vendor/brokencube/fft/src/FFT.php';
     $ans = Brokencube\FFT\FFT::run($rea, $imag);
     ksort($ans[0]);
     ksort($ans[1]);
@@ -330,12 +330,12 @@ function _fft($pwr)
         return 20 * log10(sqrt($v1 ** 2 + $v2 ** 2));
     }, $ans[0], $ans[1]);
 
-        // stores the maximum amplitude value of the fft waveform
+    // stores the maximum amplitude value of the fft waveform
     $x = max($answer);
     $y = abs(min($answer));
     $maxamp = $x >= $y ? $x : $y;
 
-    if (!(is_finite($maxamp))) {
+    if (! (is_finite($maxamp))) {
         $maxamp = 0;
     }
 
