@@ -65,44 +65,48 @@ function ss_docsis_snmp($host, $com, $oid, $denom = null)
     return $ret;
 }
 
-function ss_docsis($hostname, $snmp_community)
+function ss_docsis_get_version($hostname, $snmp_community)
 {
-    snmp_set_valueretrieval(SNMP_VALUE_PLAIN);
     try {
         // 1: D1.0, 2: D1.1, 3: D2.0, 4: D3.0
         $ver = snmpget($hostname, $snmp_community, '1.3.6.1.2.1.10.127.1.1.5.0');
     } catch (\Exception $e) {
-        if (strpos($e->getMessage(), 'Error in packet at') !== false) {
-            $ver = 1;
-        } else {
-            return;
-        }
+        return strpos($e->getMessage(), 'Error in packet at') !== false ? $ver = 1 : null;
     }
+
+    return $ver;
+}
+
+function ss_docsis_get_device_stats($hostname, $snmp_community)
+{
+    $ver = ss_docsis_get_version($hostname, $snmp_community);
 
     $ds['Pow'] = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.1.1.1.6', 10);
     $ds['MuRef'] = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.1.4.1.6');
+
+    $us['SNR'] = $GLOBALS['snrs'][gethostbyname($hostname)];
+
     if ($ver >= 4) {
         $ds['SNR'] = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.4.1.4491.2.1.20.1.24.1.1', 10);
         $us['Pow'] = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.4.1.4491.2.1.20.1.2.1.1', 10);
-    } else {
-        $ds['SNR'] = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.1.4.1.5', 10);
-        $us['Pow'] = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2', 10);
-    }
-    $us['SNR'] = $GLOBALS['snrs'][gethostbyname($hostname)];
 
-    foreach ($ds['Pow'] as $key => $val) {
-        if ($ds['SNR'][$key] == 0) {
-            foreach ($ds as $entry => $arr) {
-                unset($ds[$entry][$key]);
-            }
-        }
-    }
-    if ($ver >= 4) {
         foreach (ss_docsis_snmp($hostname, $snmp_community, '1.3.6.1.4.1.4491.2.1.20.1.2.1.9') as $key => $val) {
             if ($val != 4) {
                 foreach ($us as $entry => $arr) {
                     unset($us[$entry][$key]);
                 }
+            }
+        }
+    } else {
+        $ds['SNR'] = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.1.4.1.5', 10);
+        $us['Pow'] = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2', 10);
+    }
+
+
+    foreach ($ds['Pow'] as $key => $val) {
+        if ($ds['SNR'][$key] == 0) {
+            foreach ($ds as $entry => $arr) {
+                unset($ds[$entry][$key]);
             }
         }
     }
@@ -118,6 +122,12 @@ function ss_docsis($hostname, $snmp_community)
         ['Corrected' => array_sum(ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.1.4.1.3'))],
         ['Uncorrectable' => array_sum(ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.1.4.1.4'))]
     );
+}
+
+function ss_docsis($hostname, $snmp_community)
+{
+    snmp_set_valueretrieval(SNMP_VALUE_PLAIN);
+    $stats = ss_docsis_get_Device_Stats($hostname, $snmp_community);
 
     // pre-equalization-related data
     $file = "/usr/share/cacti/rra/$hostname.json";
@@ -176,16 +186,16 @@ function ss_docsis($hostname, $snmp_community)
         $preEqu['max'] = $fft[1];
         $preEqu['fft'] = $fft[0];
 
-        $arr['preEqualization'] = $preEqu;
-        $arr['next'] = $preEqu['next'];
-        $arr['width'] = $preEqu['width'];
-        $arr['descr'] = $preEqu['descr'];
+        $stats['preEqualization'] = $preEqu;
+        $stats['next'] = $preEqu['next'];
+        $stats['width'] = $preEqu['width'];
+        $stats['descr'] = $preEqu['descr'];
 
         file_put_contents($file, json_encode($preEqu));
     }
 
     $result = '';
-    foreach ($arr as $key => $value) {
+    foreach ($stats as $key => $value) {
         $result = is_numeric($value) || $key == 'descr' ? ($result.$key.':'.$value.' ') : ($result.$key.':NaN ');
     }
 
