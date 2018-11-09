@@ -143,7 +143,7 @@ class ProvMonController extends \BaseController
         $view_header = 'ProvMon-Analyses';
 
         // View
-		return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'preeq')));
+        return View::make('provmon::analyses', $this->compact_prep_view(compact('modem', 'online', 'tabs', 'lease', 'log', 'configfile', 'eventlog', 'dash', 'realtime', 'host_id', 'view_var', 'flood_ping', 'ip', 'view_header', 'preeq')));
     }
 
     /**

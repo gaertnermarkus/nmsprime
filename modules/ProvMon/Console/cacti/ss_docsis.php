@@ -102,7 +102,6 @@ function ss_docsis_get_device_stats($hostname, $snmp_community)
         $us['Pow'] = ss_docsis_snmp($hostname, $snmp_community, '.1.3.6.1.2.1.10.127.1.2.2.1.3.2', 10);
     }
 
-
     foreach ($ds['Pow'] as $key => $val) {
         if ($ds['SNR'][$key] == 0) {
             foreach ($ds as $entry => $arr) {
@@ -111,7 +110,7 @@ function ss_docsis_get_device_stats($hostname, $snmp_community)
         }
     }
 
-    $arr = array_merge(
+    return array_merge(
         ss_docsis_stats($ds['Pow'], 'DsPow'),
         ss_docsis_stats($ds['SNR'], 'DsSNR'),
         ss_docsis_stats($ds['MuRef'], 'MuRef'),
@@ -131,10 +130,14 @@ function ss_docsis($hostname, $snmp_community)
 
     // pre-equalization-related data
     $file = "/usr/share/cacti/rra/$hostname.json";
+    $monitor = "/usr/share/nmsp/rra/$hostname-moni.json";
     $rates = ['+8 hours', '+4 hours', '+10 minutes'];
-    $preEqu = json_decode(file_exists($file) ? file_get_contents($file) : '{"rate":0}', true);
 
-    if (! isset($preEqu['next']) || time() > $preEqu['next']) {
+    $preEqu = json_decode(file_exists($file) ? file_get_contents($file) : '{"rate":0}', true);
+    $preEquMon = json_decode(file_exists($monitor) ? file_get_contents($monitor) : '{"rate":2}', true);
+
+    if ((! isset($preEqu['next']) || time() > $preEqu['next']) ||
+        (! isset($preEquMon['next']) || time() > $preEquMon['nextMon'])) {
         snmp_set_quick_print(true);
         snmp_set_valueretrieval(SNMP_VALUE_LIBRARY);
 
@@ -147,6 +150,7 @@ function ss_docsis($hostname, $snmp_community)
         $systemDescription = ss_docsis_snmp($hostname, $snmp_community, $sysDescriptionOid)[0];
 
         $preEqu['next'] = strtotime($rates[$preEqu['rate']]);
+        $preEqu['nextMon'] = strtotime($rates[$preEquMon['rate']]);
         $preEqu['width'] = $bandwidth ? reset($bandwidth) : 3200000;
         $preEqu['descr'] = isset($systemDescription) ? $systemDescription : 'n/a';
 
@@ -190,8 +194,10 @@ function ss_docsis($hostname, $snmp_community)
         $stats['next'] = $preEqu['next'];
         $stats['width'] = $preEqu['width'];
         $stats['descr'] = $preEqu['descr'];
+        $preEquMon[date('YmdHm')] = $preEquMon;
 
         file_put_contents($file, json_encode($preEqu));
+        file_put_contents($monitor, json_encode($preEquMon));
     }
 
     $result = '';
