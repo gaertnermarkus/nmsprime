@@ -126,18 +126,21 @@ function ss_docsis_get_device_stats($hostname, $snmp_community)
 function ss_docsis($hostname, $snmp_community)
 {
     snmp_set_valueretrieval(SNMP_VALUE_PLAIN);
-    $stats = ss_docsis_get_Device_Stats($hostname, $snmp_community);
+    $cactiStats = ss_docsis_get_Device_Stats($hostname, $snmp_community);
 
     // pre-equalization-related data
     $file = "/usr/share/cacti/rra/$hostname.json";
-    $monitor = "/usr/share/nmsp/rra/$hostname-moni.json";
+    $monitor = "/usr/share/cacti/rra/$hostname-moni.json";
     $rates = ['+8 hours', '+4 hours', '+10 minutes'];
 
     $preEqu = json_decode(file_exists($file) ? file_get_contents($file) : '{"rate":0}', true);
     $preEquMon = json_decode(file_exists($monitor) ? file_get_contents($monitor) : '{"rate":2}', true);
 
-    if ((! isset($preEqu['next']) || time() > $preEqu['next']) ||
-        (! isset($preEquMon['next']) || time() > $preEquMon['nextMon'])) {
+    if (! isset($preEqu['next']) ||
+        ! isset($preEquMon['nextRun']) ||
+        time() > $preEqu['next'] ||
+        time() > $preEquMon['nextRun']) {
+
         snmp_set_quick_print(true);
         snmp_set_valueretrieval(SNMP_VALUE_LIBRARY);
 
@@ -145,19 +148,25 @@ function ss_docsis($hostname, $snmp_community)
         $preEquDataOid = '.1.3.6.1.2.1.10.127.1.2.2.1.17.2';
         $sysDescriptionOid = '.1.3.6.1.2.1.1.1';
 
-        $bandwidth = ss_docsis_snmp($hostname, $snmp_community, $bandwidthOid);
-        $preEquData = ss_docsis_snmp($hostname, $snmp_community, $preEquDataOid);
-        $systemDescription = ss_docsis_snmp($hostname, $snmp_community, $sysDescriptionOid)[0];
+        $snmpBandwidth = ss_docsis_snmp($hostname, $snmp_community, $bandwidthOid);
+        $snmpPreEquData = ss_docsis_snmp($hostname, $snmp_community, $preEquDataOid);
+        $snmpSystemDescription = ss_docsis_snmp($hostname, $snmp_community, $sysDescriptionOid)[0];
 
-        $preEqu['next'] = strtotime($rates[$preEqu['rate']]);
-        $preEqu['nextMon'] = strtotime($rates[$preEquMon['rate']]);
-        $preEqu['width'] = $bandwidth ? reset($bandwidth) : 3200000;
-        $preEqu['descr'] = isset($systemDescription) ? $systemDescription : 'n/a';
+        $systemDescription = isset($snmpSystemDescription) ? $snmpSystemDescription : 'n/a';
+        $bandwidth = $snmpBandwidth ? reset($snmpBandwidth) : 3200000;
+        $nextRunTime = strtotime($rates[$preEqu['rate']]);
 
-        $preEqu['raw'] = $preEquData ? preg_replace('/[^A-Fa-f0-9]/', '', reset($preEquData)) : '';
+        $preEquMon['nextRun'] = strtotime($rates[$preEquMon['rate']]);
+        $preEquData['raw'] = $snmpPreEquData ? preg_replace('/[^A-Fa-f0-9]/', '', reset($snmpPreEquData)) : '';
 
-        $freq = $preEqu['width'];
-        $hexs = str_split($preEqu['raw'], 8);
+        if (isset($preEquMon['descr']) && $preEquMon['descr'] !== $systemDescription) {
+            $preEquMon['WARNING'] = 'Hardware or Firmware changed!';
+        }
+
+        $preEquMon['descr'] == $systemDescription;
+
+        $freq = $bandwidth;
+        $hexs = str_split($preEquData['raw'], 8);
         $or_hexs = array_shift($hexs);
         $maintap = 2 * $or_hexs[1] - 2;
         $energymain = $maintap / 2;
@@ -184,25 +193,25 @@ function ss_docsis($hostname, $snmp_community)
         $fft = _fft($pwr);
         $tdr = _tdr($ene, $energymain, $freq);
 
-        $preEqu['power'] = $pwr;
-        $preEqu['energy'] = $ene;
-        $preEqu['tdr'] = $tdr;
-        $preEqu['max'] = $fft[1];
-        $preEqu['fft'] = $fft[0];
+        $preEquData['power'] = $pwr;
+        $preEquData['energy'] = $ene;
+        $preEquData['tdr'] = $tdr;
+        $preEquData['max'] = $fft[1];
+        $preEquData['fft'] = $fft[0];
+        $preEquData['width'] = $bandwidth;
 
-        $stats['preEqualization'] = $preEqu;
-        $stats['next'] = $preEqu['next'];
-        $stats['width'] = $preEqu['width'];
-        $stats['descr'] = $preEqu['descr'];
-        $preEquMon[date('YmdHm')] = $preEquMon;
+        $preEquMon[date("YmdHi")] = $preEquData;
 
-        file_put_contents($file, json_encode($preEqu));
+        $preEquData['next'] = $nextRunTime;
+        $preEquData['descr'] = $systemDescription;
+
+        file_put_contents($file, json_encode($preEquData));
         file_put_contents($monitor, json_encode($preEquMon));
     }
 
     $result = '';
-    foreach ($stats as $key => $value) {
-        $result = is_numeric($value) || $key == 'descr' ? ($result.$key.':'.$value.' ') : ($result.$key.':NaN ');
+    foreach ($cactiStats as $key => $value) {
+        $result .= is_numeric($value) || $key == 'descr' ? $key.':'.$value.' ' : $key.':NaN ';
     }
 
     return trim($result);
